@@ -1,12 +1,12 @@
-use std::collections::{BTreeMap};
+use crate::contract::execute::write_merkle_roots;
 use cosmwasm_std::{
     entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
 };
 use cw2::set_contract_version;
-use crate::contract::execute::write_merkle_roots;
+use std::collections::BTreeMap;
 
 use crate::error::{ContractError, ContractResult};
-use crate::msg::{VoteExtension, InstantiateMsg, QueryMsg, SudoMsg};
+use crate::msg::{InstantiateMsg, QueryMsg, SudoMsg, VoteExtension};
 use crate::state::{MERKLE_ROOTS, QUARUM};
 
 // version info for migration info
@@ -23,7 +23,8 @@ const CACHE_SIZE: usize = 6;
 pub fn sudo(deps: DepsMut, _: Env, msg: SudoMsg) -> ContractResult<Response> {
     // Store a map of chain_id to Vec<VoteExtension>
     // Each chain has its own set of VoteExtension--settled separately
-    let mut data_map: BTreeMap<String, Vec<VoteExtension>> = BTreeMap::<String, Vec<VoteExtension>>::new();
+    let mut data_map: BTreeMap<String, Vec<VoteExtension>> =
+        BTreeMap::<String, Vec<VoteExtension>>::new();
     for hash_vp in msg.data {
         for (chain_id, _) in hash_vp.vote.roots.iter() {
             match data_map.get(chain_id) {
@@ -68,16 +69,16 @@ fn aggregate_ves(chain_id: String, votes: Vec<VoteExtension>) -> Option<Binary> 
             None => {}
         }
         total_power = total_power + ve.ve_power;
-        let new_hash_power = existing_power+ve.ve_power;
+        let new_hash_power = existing_power + ve.ve_power;
         if new_hash_power > max_power {
             max_power = new_hash_power;
             best_hash = Some(voted_root.clone());
         }
         hashes_to_vp.insert(voted_root.clone(), new_hash_power);
-        if (max_power as f64)/(total_power as f64) >= QUARUM {
+        if (max_power as f64) / (total_power as f64) >= QUARUM {
             return best_hash.clone();
         }
-     }
+    }
     None
 }
 

@@ -1,6 +1,6 @@
-use std::collections::BTreeMap;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Binary;
+use std::collections::BTreeMap;
 
 #[cw_serde]
 pub struct InstantiateMsg {}
@@ -26,7 +26,7 @@ pub struct SudoMsg {
 
 #[cw_serde]
 pub struct Vote {
-    pub roots: BTreeMap<String,Binary>,
+    pub roots: BTreeMap<String, Binary>,
 }
 
 #[cw_serde]
@@ -34,5 +34,3 @@ pub struct VoteExtension {
     pub vote: Vote,
     pub ve_power: u64,
 }
-
-
