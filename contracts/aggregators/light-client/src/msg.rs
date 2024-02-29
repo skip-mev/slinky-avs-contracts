@@ -9,10 +9,7 @@ pub struct InstantiateMsg {}
 pub enum QueryMsg {
     // GetCount returns the current count as a json-encoded number
     #[returns(LookupHashResponse)]
-    LookupHash {
-        chain_id: String,
-        hash: Binary
-    },
+    LookupHash { chain_id: String, hash: Binary },
 }
 
 // We define a custom struct for each query response
@@ -23,5 +20,5 @@ pub struct LookupHashResponse {
 
 #[cw_serde]
 pub struct SudoMsg {
-    pub data: Vec<Binary>
+    pub data: Vec<Binary>,
 }

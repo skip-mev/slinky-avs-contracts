@@ -1,5 +1,5 @@
-use cosmwasm_std::{Binary};
-use cw_storage_plus::{Map};
+use cosmwasm_std::Binary;
+use cw_storage_plus::Map;
 use serde::{Deserialize, Serialize};
 
 pub const MERKLE_ROOTS: Map<String, ChainHashes> = Map::new("chain_hashes_map");

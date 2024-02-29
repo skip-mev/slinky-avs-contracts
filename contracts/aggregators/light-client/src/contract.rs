@@ -1,9 +1,11 @@
-use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, entry_point};
+use cosmwasm_std::{
+    entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+};
 use cw2::set_contract_version;
 
 use crate::error::{ContractError, ContractResult};
 use crate::msg::{InstantiateMsg, QueryMsg, SudoMsg};
-use crate::state::{MERKLE_ROOTS};
+use crate::state::MERKLE_ROOTS;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:slinky-avs-contracts";
@@ -34,17 +36,19 @@ pub fn instantiate(
         .add_attribute("owner", info.sender))
 }
 
-
 pub mod execute {
-    use crate::state::ChainHashes;
     use super::*;
+    use crate::state::ChainHashes;
 
     /// write_merkle_roots implements the state update method of the contract.
     /// Merkle roots are input using a map of chain_id to hash value.
     /// If a chain has reached the maximum cache size, it evicts the oldest entry and
     /// inserts a new one.
     /// Otherwise, it writes a new vector to state for the chain.
-    pub fn write_merkle_roots(deps: DepsMut, merkle_roots: Vec<(String, Binary)>) -> Result<Response, ContractError> {
+    pub fn write_merkle_roots(
+        deps: DepsMut,
+        merkle_roots: Vec<(String, Binary)>,
+    ) -> Result<Response, ContractError> {
         for (chain_id, merkle_hash) in merkle_roots.iter() {
             // Get the existing vector of merkle roots for the chain_id
             // let mut root_set: Vec<Binary>;
@@ -56,7 +60,7 @@ pub mod execute {
                 }
                 root_set.hashes.push(merkle_hash.clone());
             } else {
-                root_set = ChainHashes{
+                root_set = ChainHashes {
                     chain_id: chain_id.clone(),
                     hashes: Vec::new(),
                     max_size: CACHE_SIZE,
@@ -72,21 +76,28 @@ pub mod execute {
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::LookupHash { chain_id, hash } => to_json_binary(
-            &query::lookup_hash(deps, chain_id, hash)?),
+        QueryMsg::LookupHash { chain_id, hash } => {
+            to_json_binary(&query::lookup_hash(deps, chain_id, hash)?)
+        }
     }
 }
 
 pub mod query {
-    use cosmwasm_std::StdError;
-    use crate::msg::LookupHashResponse;
     use super::*;
+    use crate::msg::LookupHashResponse;
+    use cosmwasm_std::StdError;
 
-    pub fn lookup_hash(deps: Deps, chain_id: String, hash: Binary) -> StdResult<LookupHashResponse> {
+    pub fn lookup_hash(
+        deps: Deps,
+        chain_id: String,
+        hash: Binary,
+    ) -> StdResult<LookupHashResponse> {
         let chain_hashes = MERKLE_ROOTS.load(deps.storage, chain_id)?;
         for (index, chain_hash) in chain_hashes.hashes.iter().enumerate() {
             if chain_hash.eq(&hash) {
-                return Ok(LookupHashResponse{age: (chain_hashes.hashes.len()-index) as u64})
+                return Ok(LookupHashResponse {
+                    age: (chain_hashes.hashes.len() - index) as u64,
+                });
             }
         }
         Err(StdError::not_found("HashNotFound".to_string()))
@@ -96,8 +107,8 @@ pub mod query {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use cosmwasm_std::coins;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coins};
 
     #[test]
     fn proper_initialization() {
@@ -118,6 +129,5 @@ mod tests {
         let msg = InstantiateMsg {};
         let info = mock_info("creator", &coins(2, "token"));
         let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
-
     }
 }
