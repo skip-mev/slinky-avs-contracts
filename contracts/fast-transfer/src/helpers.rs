@@ -1,0 +1,113 @@
+use cosmwasm_std::{coin, coins, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Uint128};
+use osmosis_std::types::osmosis::tokenfactory::v1beta1::{MsgBurn, MsgMint};
+
+use crate::{error::ContractResult, state::STATE, ContractError};
+
+pub const INITIAL_VAULT_TOKENS_PER_BASE_TOKEN: Uint128 = Uint128::new(1_000_000);
+
+/// Asserts that exactly `amount` of `denom` is sent to the contract, with no
+/// extra funds.
+pub fn assert_correct_funds(
+    info: &MessageInfo,
+    denom: &str,
+    amount: Uint128,
+) -> ContractResult<()> {
+    if info.funds.len() != 1 || info.funds[0].denom != denom || info.funds[0].amount != amount {
+        return Err(ContractError::UnexpectedFunds {
+            expected: coins(amount.u128(), denom),
+            actual: info.funds.clone(),
+        });
+    }
+    Ok(())
+}
+
+/// Returns the number of base tokens that will be released for
+/// `vault_token_amount` vault tokens.
+pub(crate) fn convert_to_assets(deps: Deps, vault_token_amount: Uint128) -> Uint128 {
+    let state = STATE.load(deps.storage).unwrap();
+    if state.vault_token_supply.is_zero() {
+        return vault_token_amount / INITIAL_VAULT_TOKENS_PER_BASE_TOKEN;
+    }
+    state
+        .staked_base_tokens
+        .multiply_ratio(vault_token_amount, state.vault_token_supply)
+}
+
+/// Returns the number of vault tokens that will be minted for
+/// `base_token_amount` base tokens.
+pub(crate) fn convert_to_shares(deps: Deps, base_token_amount: Uint128) -> Uint128 {
+    let state = STATE.load(deps.storage).unwrap();
+
+    // vault_token_supply can be zero when staked_base_tokens is not zero, if there
+    // are rewards in the vault before the first deposit since in this case they
+    // would get compounded and the staked_base_tokens would increase without
+    // minting any vault tokens. Therefore, we base the initial amount of vault
+    // tokens on the total amount of base tokens staked in the vault,
+    // rather than just the deposited amount so that the vault token price cannot be
+    // manipulated.
+    if state.staked_base_tokens.is_zero() || state.vault_token_supply.is_zero() {
+        return (state.staked_base_tokens + base_token_amount)
+            * INITIAL_VAULT_TOKENS_PER_BASE_TOKEN;
+    }
+
+    state
+        .vault_token_supply
+        .multiply_ratio(base_token_amount, state.staked_base_tokens)
+}
+
+/// Return a token factory mint message to mint `amount` of vault tokens to
+/// `env.contract.address`.
+pub(crate) fn mint_vault_tokens(
+    deps: DepsMut,
+    env: Env,
+    deposit_amount: Uint128,
+    vault_token_denom: &str,
+) -> ContractResult<(CosmosMsg, Uint128)> {
+    let mut state = STATE.load(deps.storage)?;
+
+    let mint_amount = convert_to_shares(deps.as_ref(), deposit_amount);
+
+    state.staked_base_tokens = state.staked_base_tokens.checked_add(deposit_amount)?;
+    state.vault_token_supply = state.vault_token_supply.checked_add(mint_amount)?;
+
+    STATE.save(deps.storage, &state)?;
+
+    Ok((
+        MsgMint {
+            sender: env.contract.address.to_string(),
+            amount: Some(coin(mint_amount.u128(), vault_token_denom).into()),
+            mint_to_address: env.contract.address.to_string(),
+        }
+        .into(),
+        mint_amount,
+    ))
+}
+
+/// Return a token factory burn message to burn `amount` of vault tokens from\
+/// `env.contract.address` in a tuple together with the amount of base tokens
+/// that should be released.
+pub(crate) fn burn_vault_tokens(
+    deps: DepsMut,
+    env: &Env,
+    burn_amount: Uint128,
+    vault_token_denom: &str,
+) -> ContractResult<(CosmosMsg, Uint128)> {
+    let mut state = STATE.load(deps.storage)?;
+
+    let release_amount = convert_to_assets(deps.as_ref(), burn_amount);
+
+    state.staked_base_tokens = state.staked_base_tokens.checked_sub(release_amount)?;
+    state.vault_token_supply = state.vault_token_supply.checked_sub(burn_amount)?;
+
+    STATE.save(deps.storage, &state)?;
+
+    Ok((
+        MsgBurn {
+            sender: env.contract.address.to_string(),
+            amount: Some(coin(burn_amount.u128(), vault_token_denom).into()),
+            burn_from_address: env.contract.address.to_string(),
+        }
+        .into(),
+        release_amount,
+    ))
+}
