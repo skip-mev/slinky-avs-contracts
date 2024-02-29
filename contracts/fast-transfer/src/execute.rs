@@ -57,9 +57,9 @@ pub fn execute_withdraw(
 
 pub fn execute_slow_transfer(
     deps: DepsMut,
+    info: MessageInfo,
     id: u64,
     recipient: String,
-    amount: Uint128,
 ) -> ContractResponse {
     let was_fast_transferred = PROCESSED_IDS.has(deps.storage, id);
 
@@ -68,11 +68,9 @@ pub fn execute_slow_transfer(
         return Ok(Response::new());
     }
 
-    let base_token = BASE_TOKEN.load(deps.storage)?;
-
     let send_msg: CosmosMsg = BankMsg::Send {
         to_address: recipient.to_string(),
-        amount: coins(amount.u128(), base_token),
+        amount: info.funds,
     }
     .into();
 

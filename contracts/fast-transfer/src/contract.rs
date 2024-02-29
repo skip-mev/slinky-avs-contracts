@@ -57,7 +57,7 @@ pub fn execute(
             execute_withdraw(deps, env, info.clone(), withdraw.amount, info.sender)
         }
         ExecuteMsg::SlowTransfer(transfer) => {
-            execute_slow_transfer(deps, transfer.id, transfer.recipient, transfer.amount)
+            execute_slow_transfer(deps, info, transfer.id, transfer.recipient)
         }
     }
 }
