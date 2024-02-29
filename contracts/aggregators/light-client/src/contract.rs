@@ -109,6 +109,15 @@ pub mod execute {
             let mut root_set: ChainHashes;
             if MERKLE_ROOTS.has(deps.storage, chain_id.to_string()) {
                 root_set = MERKLE_ROOTS.load(deps.storage, chain_id.clone()).unwrap();
+                let mut seen = false;
+                for root in root_set.hashes.iter() {
+                    if root.eq(merkle_hash) {
+                        seen = true;
+                    }
+                }
+                if seen {
+                    continue;
+                }
                 if root_set.hashes.len() == root_set.max_size {
                     root_set.hashes.remove(0);
                 }
