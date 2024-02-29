@@ -3,7 +3,7 @@ use cosmwasm_std::{coins, Addr, BankMsg, CosmosMsg, DepsMut, Env, MessageInfo, R
 use crate::{
     error::ContractResponse,
     helpers::{assert_correct_funds, burn_vault_tokens, mint_vault_tokens},
-    state::{BASE_TOKEN, LP_TOKEN_DENOM},
+    state::{BASE_TOKEN, LP_TOKEN_DENOM, PROCESSED_IDS},
 };
 
 pub fn execute_deposit(
@@ -53,4 +53,26 @@ pub fn execute_withdraw(
     .into();
 
     Ok(Response::new().add_message(send_msg).add_message(burn_msg))
+}
+
+pub fn execute_slow_transfer(
+    deps: DepsMut,
+    info: MessageInfo,
+    id: u64,
+    recipient: String,
+) -> ContractResponse {
+    let was_fast_transferred = PROCESSED_IDS.has(deps.storage, id);
+
+    if was_fast_transferred {
+        // transfer was already processed, funds are kept to rebalance the pool
+        return Ok(Response::new());
+    }
+
+    let send_msg: CosmosMsg = BankMsg::Send {
+        to_address: recipient.to_string(),
+        amount: info.funds,
+    }
+    .into();
+
+    Ok(Response::new().add_message(send_msg))
 }

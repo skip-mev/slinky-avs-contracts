@@ -6,11 +6,11 @@ use cw2::set_contract_version;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgCreateDenom;
 
 use crate::error::ContractError;
+use crate::execute::{execute_deposit, execute_slow_transfer, execute_withdraw};
 use crate::helpers::{convert_to_assets, convert_to_shares};
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::query::query_vault_info;
 use crate::state::{BASE_TOKEN, LP_TOKEN_DENOM, STATE};
-use crate::execute::{execute_deposit, execute_withdraw};
 
 // version info for migration info
 const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
@@ -56,7 +56,9 @@ pub fn execute(
         ExecuteMsg::Withdraw(withdraw) => {
             execute_withdraw(deps, env, info.clone(), withdraw.amount, info.sender)
         }
-        _ => panic!("unimplemented"),
+        ExecuteMsg::SlowTransfer(transfer) => {
+            execute_slow_transfer(deps, info, transfer.id, transfer.recipient)
+        }
     }
 }
 
