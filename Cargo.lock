@@ -698,6 +698,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "skip-super-sonic-fast-transfer-protocol"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-multi-test",
+ "cw-storage-plus",
+ "cw2",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "slinky-avs-contracts"
 version = "0.1.0"
 dependencies = [
