@@ -69,9 +69,9 @@ fn aggregate_ves(chain_id: String, votes: Vec<VoteExtension>) -> Option<Binary> 
             best_hash = Some(voted_root.clone());
         }
         hashes_to_vp.insert(voted_root.clone(), new_hash_power);
-        if (max_power as f64) / (total_power as f64) >= QUARUM {
-            return best_hash.clone();
-        }
+    }
+    if (max_power as f64) / (total_power as f64) >= QUARUM {
+        return best_hash.clone();
     }
     None
 }
