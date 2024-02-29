@@ -26,7 +26,7 @@ pub fn sudo(deps: DepsMut, _: Env, msg: SudoMsg) -> ContractResult<Response> {
     let mut data_map: BTreeMap<String, Vec<VoteExtension>> =
         BTreeMap::<String, Vec<VoteExtension>>::new();
     for generic_hash_vp in msg.data {
-        let hash_vp = VoteExtension::try_from(generic_hash_vp).unwrap();
+        let hash_vp: VoteExtension = From::from(generic_hash_vp);
         for (chain_id, _) in hash_vp.vote.roots.iter() {
             match data_map.get(chain_id) {
                 Some(result) => {
