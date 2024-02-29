@@ -1,11 +1,13 @@
+use crate::contract::execute::write_merkle_roots;
 use cosmwasm_std::{
     entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
 };
 use cw2::set_contract_version;
+use std::collections::BTreeMap;
 
 use crate::error::{ContractError, ContractResult};
-use crate::msg::{InstantiateMsg, QueryMsg, SudoMsg};
-use crate::state::MERKLE_ROOTS;
+use crate::msg::{InstantiateMsg, QueryMsg, SudoMsg, VoteExtension};
+use crate::state::{MERKLE_ROOTS, QUARUM};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:slinky-avs-contracts";
@@ -18,8 +20,60 @@ const CACHE_SIZE: usize = 6;
 ///  * aggregation over the VE light client inputs
 ///  * updating contract state to store agreed upon state updates
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn sudo(_: DepsMut, _: Env, _: SudoMsg) -> ContractResult<Response> {
-    ContractResult::Ok(Response::new())
+pub fn sudo(deps: DepsMut, _: Env, msg: SudoMsg) -> ContractResult<Response> {
+    // Store a map of chain_id to Vec<VoteExtension>
+    // Each chain has its own set of VoteExtension--settled separately
+    let mut data_map: BTreeMap<String, Vec<VoteExtension>> =
+        BTreeMap::<String, Vec<VoteExtension>>::new();
+    for hash_vp in msg.data {
+        for (chain_id, _) in hash_vp.vote.roots.iter() {
+            match data_map.get(chain_id) {
+                Some(result) => {
+                    let existing_data: Vec<VoteExtension> = result.to_vec();
+                    result.to_vec().push(hash_vp.clone());
+                    data_map.insert(chain_id.clone(), existing_data);
+                }
+                None => {
+                    let new_data: Vec<VoteExtension> = Vec::new();
+                    data_map.insert(chain_id.clone(), new_data);
+                }
+            }
+        }
+    }
+    // aggregate over all the collected vote data
+    let mut vote_roots: Vec<(String, Binary)> = Vec::new();
+    for (chain_id, vote_extensions) in data_map.iter() {
+        if let Some(root) = aggregate_ves(chain_id.clone(), vote_extensions.to_vec()) {
+            vote_roots.push((chain_id.clone(), root));
+        }
+    }
+    write_merkle_roots(deps, vote_roots)
+}
+
+fn aggregate_ves(chain_id: String, votes: Vec<VoteExtension>) -> Option<Binary> {
+    // aggregate over all the collected vote data
+    let mut hashes_to_vp: BTreeMap<Binary, u64> = BTreeMap::new();
+    let mut max_power: u64 = 0;
+    let mut total_power: u64 = 0;
+    let mut best_hash: Option<Binary> = None;
+    for ve in votes {
+        let voted_root = ve.vote.roots.get(&chain_id)?;
+        let mut existing_power: u64 = 0;
+        if let Some(power) = hashes_to_vp.get(voted_root) {
+            existing_power = *power;
+        }
+        total_power += ve.ve_power;
+        let new_hash_power = existing_power + ve.ve_power;
+        if new_hash_power > max_power {
+            max_power = new_hash_power;
+            best_hash = Some(voted_root.clone());
+        }
+        hashes_to_vp.insert(voted_root.clone(), new_hash_power);
+    }
+    if (max_power as f64) / (total_power as f64) >= QUARUM {
+        return best_hash.clone();
+    }
+    None
 }
 
 /// instantiate is used to construct the contract
@@ -55,6 +109,15 @@ pub mod execute {
             let mut root_set: ChainHashes;
             if MERKLE_ROOTS.has(deps.storage, chain_id.to_string()) {
                 root_set = MERKLE_ROOTS.load(deps.storage, chain_id.clone()).unwrap();
+                let mut seen = false;
+                for root in root_set.hashes.iter() {
+                    if root.eq(merkle_hash) {
+                        seen = true;
+                    }
+                }
+                if seen {
+                    continue;
+                }
                 if root_set.hashes.len() == root_set.max_size {
                     root_set.hashes.remove(0);
                 }
