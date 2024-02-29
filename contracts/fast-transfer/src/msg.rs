@@ -21,7 +21,6 @@ pub enum ExecuteMsg {
         sender: String,
         amount: u128,
     },
-    SlowTransfer {},
     Withdraw(Withdraw),
     SlowTransfer(SlowTransfer),
 }

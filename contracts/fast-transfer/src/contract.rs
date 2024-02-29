@@ -59,6 +59,9 @@ pub fn execute(
         ExecuteMsg::SlowTransfer(transfer) => {
             execute_slow_transfer(deps, info, transfer.id, transfer.recipient)
         }
+        ExecuteMsg::FastTransfer{ .. } => {
+            unimplemented!("FastTransfer is not implemented yet")
+        }
     }
 }
 
