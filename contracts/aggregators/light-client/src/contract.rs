@@ -1,0 +1,118 @@
+use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, entry_point};
+use cw2::set_contract_version;
+
+use crate::error::{ContractError, ContractResult};
+use crate::msg::{InstantiateMsg, QueryMsg, SudoMsg};
+use crate::state::{MERKLE_ROOTS};
+
+// version info for migration info
+const CONTRACT_NAME: &str = "crates.io:slinky-avs-contracts";
+const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+const CACHE_SIZE: usize = 6;
+
+/// sudo is the main entrypoint for the contract. It can only be called by modules.
+/// This function handles:
+///  * the deserialization of the input msg
+///  * aggregation over the VE light client inputs
+///  * updating contract state to store agreed upon state updates
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> ContractResult<Response> {
+    return ContractResult::Ok(Response::new());
+}
+
+/// instantiate is used to construct the contract
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn instantiate(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    _: InstantiateMsg,
+) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    Ok(Response::new()
+        .add_attribute("method", "instantiate")
+        .add_attribute("owner", info.sender))
+}
+
+
+pub mod execute {
+    use cw_storage_plus::Map;
+    use super::*;
+
+    /// write_merkle_roots implements the state update method of the contract.
+    /// Merkle roots are input using a map of chain_id to hash value.
+    /// If a chain has reached the maximum cache size, it evicts the oldest entry and
+    /// inserts a new one.
+    /// Otherwise, it writes a new vector to state for the chain.
+    pub fn write_merkle_roots(deps: DepsMut, merkle_roots: Map<String, Vec<Binary>>) -> Result<Response, ContractError> {
+        for (chain_id, merkle_hash) in merkle_roots.into() {
+            // Get the existing vector of merkle roots for the chain_id
+            let mut root_set: Vec<Binary>;
+            if MERKLE_ROOTS.has(deps.storage, chain_id.to_string()) {
+                root_set = MERKLE_ROOTS.load(deps.storage, chain_id.to_string()).unwrap();
+                if root_set.len() == CACHE_SIZE {
+                    root_set.remove(0);
+                }
+                root_set.push(merkle_hash);
+            } else {
+                root_set = Vec::new();
+                root_set.push(merkle_hash);
+            }
+            MERKLE_ROOTS.save(deps.storage, chain_id, &root_set)?;
+        }
+        Ok(Response::new())
+    }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    match msg {
+        QueryMsg::LookupHash { chain_id, hash } => to_json_binary(
+            &query::lookup_hash(deps, chain_id, hash)?),
+    }
+}
+
+pub mod query {
+    use cosmwasm_std::StdError;
+    use crate::msg::LookupHashResponse;
+    use super::*;
+
+    pub fn lookup_hash(deps: Deps, chain_id: String, hash: Binary) -> StdResult<LookupHashResponse> {
+        let chain_roots = MERKLE_ROOTS.load(deps.storage, chain_id)?;
+        for (index, chain_hash) in chain_roots.iter().enumerate() {
+            if chain_hash.eq(&hash) {
+                return Ok(LookupHashResponse{age: (chain_roots.len()-index) as u64})
+            }
+        }
+        Err(StdError::not_found("HashNotFound".to_string()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use cosmwasm_std::{coins, from_json};
+
+    #[test]
+    fn proper_initialization() {
+        let mut deps = mock_dependencies();
+
+        let msg = InstantiateMsg {};
+        let info = mock_info("creator", &coins(1000, "earth"));
+
+        // we can just call .unwrap() to assert this was a success
+        let res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+        assert_eq!(0, res.messages.len());
+    }
+
+    #[test]
+    fn do_some_hash_stuff() {
+        let mut deps = mock_dependencies();
+
+        let msg = InstantiateMsg {};
+        let info = mock_info("creator", &coins(2, "token"));
+        let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+
+    }
+}
