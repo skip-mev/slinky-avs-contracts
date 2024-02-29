@@ -56,6 +56,7 @@ pub fn execute(
         ExecuteMsg::Withdraw(withdraw) => {
             execute_withdraw(deps, env, info.clone(), withdraw.amount, info.sender)
         }
+        _ => panic!("unimplemented"),
     }
 }
 
