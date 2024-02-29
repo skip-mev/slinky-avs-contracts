@@ -3,6 +3,7 @@ use cw_storage_plus::Map;
 use serde::{Deserialize, Serialize};
 
 pub const MERKLE_ROOTS: Map<String, ChainHashes> = Map::new("chain_hashes_map");
+pub const QUARUM: f64 = ((2 / 3) + 1) as f64;
 
 #[derive(Serialize, Deserialize)]
 pub struct ChainHashes {
