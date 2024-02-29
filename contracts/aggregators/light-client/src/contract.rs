@@ -16,7 +16,7 @@ const CACHE_SIZE: usize = 6;
 ///  * aggregation over the VE light client inputs
 ///  * updating contract state to store agreed upon state updates
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> ContractResult<Response> {
+pub fn sudo(_: DepsMut, _: Env, _: SudoMsg) -> ContractResult<Response> {
     return ContractResult::Ok(Response::new());
 }
 
@@ -36,7 +36,7 @@ pub fn instantiate(
 
 
 pub mod execute {
-    use cw_storage_plus::Map;
+    use crate::state::ChainHashes;
     use super::*;
 
     /// write_merkle_roots implements the state update method of the contract.
@@ -44,21 +44,26 @@ pub mod execute {
     /// If a chain has reached the maximum cache size, it evicts the oldest entry and
     /// inserts a new one.
     /// Otherwise, it writes a new vector to state for the chain.
-    pub fn write_merkle_roots(deps: DepsMut, merkle_roots: Map<String, Vec<Binary>>) -> Result<Response, ContractError> {
-        for (chain_id, merkle_hash) in merkle_roots.into() {
+    pub fn write_merkle_roots(deps: DepsMut, merkle_roots: Vec<(String, Binary)>) -> Result<Response, ContractError> {
+        for (chain_id, merkle_hash) in merkle_roots.iter() {
             // Get the existing vector of merkle roots for the chain_id
-            let mut root_set: Vec<Binary>;
+            // let mut root_set: Vec<Binary>;
+            let mut root_set: ChainHashes;
             if MERKLE_ROOTS.has(deps.storage, chain_id.to_string()) {
-                root_set = MERKLE_ROOTS.load(deps.storage, chain_id.to_string()).unwrap();
-                if root_set.len() == CACHE_SIZE {
-                    root_set.remove(0);
+                root_set = MERKLE_ROOTS.load(deps.storage, chain_id.clone()).unwrap();
+                if root_set.hashes.len() == root_set.max_size {
+                    root_set.hashes.remove(0);
                 }
-                root_set.push(merkle_hash);
+                root_set.hashes.push(merkle_hash.clone());
             } else {
-                root_set = Vec::new();
-                root_set.push(merkle_hash);
+                root_set = ChainHashes{
+                    chain_id: chain_id.clone(),
+                    hashes: Vec::new(),
+                    max_size: CACHE_SIZE,
+                };
+                root_set.hashes.push(merkle_hash.clone());
             }
-            MERKLE_ROOTS.save(deps.storage, chain_id, &root_set)?;
+            MERKLE_ROOTS.save(deps.storage, chain_id.clone(), &root_set)?;
         }
         Ok(Response::new())
     }
@@ -78,10 +83,10 @@ pub mod query {
     use super::*;
 
     pub fn lookup_hash(deps: Deps, chain_id: String, hash: Binary) -> StdResult<LookupHashResponse> {
-        let chain_roots = MERKLE_ROOTS.load(deps.storage, chain_id)?;
-        for (index, chain_hash) in chain_roots.iter().enumerate() {
+        let chain_hashes = MERKLE_ROOTS.load(deps.storage, chain_id)?;
+        for (index, chain_hash) in chain_hashes.hashes.iter().enumerate() {
             if chain_hash.eq(&hash) {
-                return Ok(LookupHashResponse{age: (chain_roots.len()-index) as u64})
+                return Ok(LookupHashResponse{age: (chain_hashes.hashes.len()-index) as u64})
             }
         }
         Err(StdError::not_found("HashNotFound".to_string()))
@@ -92,7 +97,7 @@ pub mod query {
 mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coins, from_json};
+    use cosmwasm_std::{coins};
 
     #[test]
     fn proper_initialization() {
