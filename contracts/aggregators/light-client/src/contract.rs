@@ -43,11 +43,8 @@ pub fn sudo(deps: DepsMut, _: Env, msg: SudoMsg) -> ContractResult<Response> {
     // aggregate over all the collected vote data
     let mut vote_roots: Vec<(String, Binary)> = Vec::new();
     for (chain_id, vote_extensions) in data_map.iter() {
-        match aggregate_ves(chain_id.clone(), vote_extensions.to_vec()) {
-            Some(root) => {
-                vote_roots.push((chain_id.clone(), root));
-            }
-            _ => {}
+        if let Some(root) = aggregate_ves(chain_id.clone(), vote_extensions.to_vec()) {
+            vote_roots.push((chain_id.clone(), root));
         }
     }
     write_merkle_roots(deps, vote_roots)
@@ -62,13 +59,10 @@ fn aggregate_ves(chain_id: String, votes: Vec<VoteExtension>) -> Option<Binary> 
     for ve in votes {
         let voted_root = ve.vote.roots.get(&chain_id)?;
         let mut existing_power: u64 = 0;
-        match hashes_to_vp.get(voted_root) {
-            Some(power) => {
-                existing_power = power.clone();
-            }
-            None => {}
+        if let Some(power) = hashes_to_vp.get(voted_root) {
+            existing_power = *power;
         }
-        total_power = total_power + ve.ve_power;
+        total_power += ve.ve_power;
         let new_hash_power = existing_power + ve.ve_power;
         if new_hash_power > max_power {
             max_power = new_hash_power;
