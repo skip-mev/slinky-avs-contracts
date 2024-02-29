@@ -32,6 +32,7 @@ serde           = { workspace = true }
 thiserror       = { workspace = true }
 rs_merkle       = { workspace = true }
 tiny-keccak     = { workspace = true }
+osmosis-std     = { workspace = true }
 
 [dev-dependencies]
 cw-multi-test = { workspace = true }
