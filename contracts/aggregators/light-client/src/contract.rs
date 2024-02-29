@@ -19,7 +19,7 @@ const CACHE_SIZE: usize = 6;
 ///  * updating contract state to store agreed upon state updates
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn sudo(_: DepsMut, _: Env, _: SudoMsg) -> ContractResult<Response> {
-    return ContractResult::Ok(Response::new());
+    ContractResult::Ok(Response::new())
 }
 
 /// instantiate is used to construct the contract
