@@ -13,6 +13,7 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     Deposit(Deposit),
     Withdraw(Withdraw),
+    SlowTransfer(SlowTransfer),
 }
 
 #[cw_serde]
@@ -48,4 +49,11 @@ pub struct Withdraw {
 pub struct VaultInfoResponse {
     pub base_token: String,
     pub lp_token: String,
+}
+
+#[cw_serde]
+pub struct SlowTransfer {
+    pub id: u64,
+    pub recipient: String,
+    pub amount: Uint128,
 }
