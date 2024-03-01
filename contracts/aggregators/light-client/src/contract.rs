@@ -37,8 +37,7 @@ pub fn sudo(deps: DepsMut, _: Env, msg: SudoMsg) -> ContractResult<Response> {
                     data_map.insert(chain_id.clone(), existing_data);
                 }
                 None => {
-                    let mut new_data: Vec<VoteExtension> = Vec::new();
-                    new_data.push(hash_vp.clone());
+                    let new_data: Vec<VoteExtension> = vec![hash_vp.clone()];
                     data_map.insert(chain_id.clone(), new_data);
                 }
             }
