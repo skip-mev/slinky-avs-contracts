@@ -1,7 +1,7 @@
 use crate::merkle::Keccak256Algorithm;
 use aggregator::aggregator::{LookupHashResponse, QueryMsg as AggQueryMsg};
 use cosmwasm_std::{coins, Addr, BankMsg, CosmosMsg, DepsMut, Env, MessageInfo, Response, Uint128};
-use rs_merkle::{Hasher, MerkleProof};
+use rs_merkle::{Hasher, MerkleProof, algorithms::Sha256};
 
 use crate::{
     error::{
@@ -117,13 +117,13 @@ pub fn execute_fast_transfer(
     )?;
 
     // Verify the transaction receipt is the hash as the undice wanting to be merkle proofed
-    let receipt_hash = Keccak256Algorithm::hash(&transaction_receipt);
-    if receipt_hash != root_hash {
+    let receipt_hash = Sha256::hash(&transaction_receipt);
+    if !branch.contains(&receipt_hash) {
         return Err(InvalidTransactionReceiptToProve {});
     }
 
     // Create the merkle proof and verify it against the root hash retrieved from the aggregator
-    let merkle_proof: MerkleProof<Keccak256Algorithm> = MerkleProof::new(branch.clone());
+    let merkle_proof: MerkleProof<Sha256> = MerkleProof::new(branch.clone());
     if !merkle_proof.verify(root_hash, &indices, &branch, total_leaves) {
         return Err(InvalidMerkleProof {});
     }
@@ -144,4 +144,27 @@ pub fn execute_fast_transfer(
     PROCESSED_IDS.save(deps.storage, STATIC_ID, &true)?;
 
     Ok(Response::new().add_message(bank_msg))
+}
+
+#[cfg(test)]
+pub mod test {
+    use super::*;
+    use rs_merkle::MerkleTree;
+    use hex::encode as hex_encode;
+
+    #[test]
+    fn test_merkle() {
+        let mut leaves: Vec<[u8; 32]> = vec![];
+        for i in 0u8..10 {
+            let leaf = [i; 32];
+            leaves.push(leaf);
+        }
+
+        let tree: MerkleTree<Sha256> = rs_merkle::MerkleTree::from_leaves(&leaves);
+        let root = tree.root();
+        
+        // Convert root to hex string and print
+        let root_hex = hex_encode(root);
+        println!("Root: {:?}", root_hex);
+    }
 }

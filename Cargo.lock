@@ -851,6 +851,7 @@ dependencies = [
  "cw-multi-test",
  "cw-storage-plus",
  "cw2",
+ "hex",
  "osmosis-std",
  "rs_merkle",
  "schemars",
