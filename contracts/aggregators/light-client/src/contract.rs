@@ -6,14 +6,53 @@ use cw2::set_contract_version;
 use std::collections::BTreeMap;
 
 use crate::error::{ContractError, ContractResult};
-use crate::msg::{InstantiateMsg, SudoMsg, VoteExtension};
-use crate::state::{MERKLE_ROOTS, QUARUM};
+use crate::msg::{ExecuteMsg, InstantiateMsg, SudoMsg, VoteExtension};
+use crate::state::{MERKLE_ROOTS, QUARUM, STAKE_MAP};
 use aggregator::aggregator::{LookupHashResponse, QueryMsg};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:slinky-avs-contracts";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const CACHE_SIZE: usize = 6;
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn execute(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> ContractResult<Response> {
+    match msg {
+        ExecuteMsg::Stake { .. } => {
+            let sender_staked_coins = STAKE_MAP
+                .load(deps.storage, info.sender.clone())
+                .unwrap_or_else(|_| vec![]);
+
+            let updated_coins =
+                info.funds
+                    .iter()
+                    .fold(sender_staked_coins, |mut staked_coins, sent_coin| {
+                        match staked_coins
+                            .iter_mut()
+                            .find(|staked_coin| staked_coin.denom == sent_coin.denom)
+                        {
+                            Some(staked_coin) => {
+                                staked_coin.amount = staked_coin
+                                    .amount
+                                    .checked_add(sent_coin.amount)
+                                    .expect("Overflow in coin amount")
+                            }
+                            None => staked_coins.push(sent_coin.clone()),
+                        }
+                        staked_coins
+                    });
+
+            STAKE_MAP.save(deps.storage, info.sender, &updated_coins)?;
+
+            Ok(Response::new().add_attribute("action", "stake"))
+        }
+    }
+}
 
 /// sudo is the main entrypoint for the contract. It can only be called by modules.
 /// This function handles:
@@ -173,10 +212,10 @@ pub mod query {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::msg::{GenericVE, Vote};
     use bincode::serialize;
     use cosmwasm_std::coins;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use crate::msg::{GenericVE, Vote};
 
     #[test]
     fn proper_initialization() {
