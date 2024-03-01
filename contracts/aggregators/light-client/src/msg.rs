@@ -45,16 +45,11 @@ pub struct GenericVE {
 impl From<GenericVE> for VoteExtension {
     fn from(value: GenericVE) -> Self {
         let vote = deserialize(value.vote.as_ref()).unwrap();
-        VoteExtension{
+        VoteExtension {
             vote,
-            ve_power: 0,
+            ve_power: value.ve_power,
         }
-        /*
-        let encoded = serialize(&value).unwrap();
-        deserialize(&encoded[..]).unwrap()
-         */
     }
-
 }
 
 impl From<Binary> for VoteExtension {
