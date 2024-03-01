@@ -1,10 +1,20 @@
+use crate::merkle::Keccak256Algorithm;
+use aggregator::aggregator::{LookupHashResponse, QueryMsg as AggQueryMsg};
 use cosmwasm_std::{coins, Addr, BankMsg, CosmosMsg, DepsMut, Env, MessageInfo, Response, Uint128};
+use rs_merkle::{Hasher, MerkleProof};
 
 use crate::{
-    error::ContractResponse,
+    error::{
+        ContractError,
+        ContractError::{InvalidMerkleProof, InvalidTransactionReceiptToProve},
+        ContractResponse,
+    },
     helpers::{assert_correct_funds, burn_vault_tokens, mint_vault_tokens},
-    state::{BASE_TOKEN, LP_TOKEN_DENOM, PROCESSED_IDS},
+    msg::FastTransfer,
+    state::{AGGREGATOR_CONTRACT, BASE_TOKEN, LP_TOKEN_DENOM, PROCESSED_IDS},
 };
+
+const STATIC_ID: u64 = 1;
 
 pub fn execute_deposit(
     deps: DepsMut,
@@ -75,4 +85,63 @@ pub fn execute_slow_transfer(
     .into();
 
     Ok(Response::new().add_message(send_msg))
+}
+
+pub fn execute_fast_transfer(
+    deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+    fast_transfer: FastTransfer,
+) -> ContractResponse {
+    // Leaf to prove inclusion in merkle root
+    let transaction_receipt = fast_transfer.transaction_receipt;
+    // Info needed to verify the merkle proof
+    let branch = fast_transfer.branch;
+    let root_hash = fast_transfer.root_hash;
+    let indices = fast_transfer.indices;
+    let total_leaves = fast_transfer.total_leaves;
+    let chain_id = fast_transfer.chain_id;
+    // In real world, amount and receiver should be info that can be pulled
+    // from the transaction receipt
+    let amount: Uint128 = Uint128::from(fast_transfer.amount);
+    let receiver = fast_transfer.receiver;
+
+    // Query the aggregator contract to check if the root hash exists in the keeper
+    let aggregator_contract = AGGREGATOR_CONTRACT.load(deps.storage)?;
+    let _: LookupHashResponse = deps.querier.query_wasm_smart(
+        aggregator_contract,
+        &AggQueryMsg::LookupHash {
+            chain_id,
+            hash: root_hash.into(),
+        },
+    )?;
+
+    // Verify the transaction receipt is the hash as the undice wanting to be merkle proofed
+    let receipt_hash = Keccak256Algorithm::hash(&transaction_receipt);
+    if receipt_hash != root_hash {
+        return Err(InvalidTransactionReceiptToProve {});
+    }
+
+    // Create the merkle proof and verify it against the root hash retrieved from the aggregator
+    let merkle_proof: MerkleProof<Keccak256Algorithm> = MerkleProof::new(branch.clone());
+    if !merkle_proof.verify(root_hash, &indices, &branch, total_leaves) {
+        return Err(InvalidMerkleProof {});
+    }
+
+    // Verify denom in is the same as the base token
+    let base_token = BASE_TOKEN.load(deps.storage)?;
+    if fast_transfer.denom != base_token {
+        return Err(ContractError::InvalidFastTransferDenom {});
+    }
+
+    // Send the amount to the receiver
+    let bank_msg = BankMsg::Send {
+        to_address: receiver,
+        amount: coins(amount.u128(), base_token),
+    };
+
+    // Store the unique id to flag it as fast transferred
+    PROCESSED_IDS.save(deps.storage, STATIC_ID, &true)?;
+
+    Ok(Response::new().add_message(bank_msg))
 }

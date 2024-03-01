@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Binary, Uint128};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -7,11 +7,14 @@ pub struct InstantiateMsg {
     pub base_denom: String,
     /// LP token sub-denom
     pub lp_sub_denom: String,
+    /// Aggregator contract address
+    pub aggregator_contract: String,
 }
 
 #[cw_serde]
 pub enum ExecuteMsg {
     Deposit(Deposit),
+    FastTransfer(FastTransfer),
     Withdraw(Withdraw),
     SlowTransfer(SlowTransfer),
 }
@@ -56,4 +59,18 @@ pub struct SlowTransfer {
     pub id: u64,
     pub recipient: String,
     pub amount: Uint128,
+}
+
+#[cw_serde]
+pub struct FastTransfer {
+    pub transaction_receipt: Binary,
+    pub branch: Vec<[u8; 32]>,
+    pub indices: Vec<usize>,
+    pub root_hash: [u8; 32],
+    pub sender: String,
+    pub receiver: String,
+    pub denom: String,
+    pub amount: u128,
+    pub total_leaves: usize,
+    pub chain_id: String,
 }

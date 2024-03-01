@@ -6,11 +6,13 @@ use cw2::set_contract_version;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgCreateDenom;
 
 use crate::error::ContractError;
-use crate::execute::{execute_deposit, execute_slow_transfer, execute_withdraw};
+use crate::execute::{
+    execute_deposit, execute_fast_transfer, execute_slow_transfer, execute_withdraw,
+};
 use crate::helpers::{convert_to_assets, convert_to_shares};
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::query::query_vault_info;
-use crate::state::{BASE_TOKEN, LP_TOKEN_DENOM, STATE};
+use crate::state::{AGGREGATOR_CONTRACT, BASE_TOKEN, LP_TOKEN_DENOM, STATE};
 
 // version info for migration info
 const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
@@ -25,6 +27,10 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    // Validate and store the aggregator contract address
+    let aggregator_contract = deps.api.addr_validate(&msg.aggregator_contract)?;
+    AGGREGATOR_CONTRACT.save(deps.storage, &aggregator_contract)?;
 
     // Store base token and vault token denom
     let lp_token_denom = format!("factory/{}/{}", env.contract.address, msg.lp_sub_denom);
@@ -59,6 +65,7 @@ pub fn execute(
         ExecuteMsg::SlowTransfer(transfer) => {
             execute_slow_transfer(deps, info, transfer.id, transfer.recipient)
         }
+        ExecuteMsg::FastTransfer(transfer) => execute_fast_transfer(deps, env, info, transfer),
     }
 }
 

@@ -173,10 +173,10 @@ pub mod query {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::msg::{GenericVE, Vote};
     use bincode::serialize;
     use cosmwasm_std::coins;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use crate::msg::{GenericVE, Vote};
 
     #[test]
     fn proper_initialization() {

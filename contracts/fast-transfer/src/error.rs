@@ -21,6 +21,15 @@ pub enum ContractError {
         expected: Vec<Coin>,
         actual: Vec<Coin>,
     },
+
+    #[error("Invalid fast transfer merkle proof")]
+    InvalidMerkleProof {},
+
+    #[error("Invalid fast transfer denom")]
+    InvalidFastTransferDenom {},
+
+    #[error("Invalid tx receipt in merkle proof")]
+    InvalidTransactionReceiptToProve,
 }
 
 pub type ContractResult<T> = Result<T, ContractError>;
