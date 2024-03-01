@@ -14,10 +14,7 @@ pub struct SudoMsg {
 #[cw_serde]
 pub enum ExecuteMsg {
     Stake {},
-    SubmitRoot {
-        chain_id: String,
-        root: Binary,
-    },
+    SubmitRoot { chain_id: String, root: Binary },
 }
 
 #[cw_serde]
