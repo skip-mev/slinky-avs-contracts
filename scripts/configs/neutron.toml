@@ -1,0 +1,20 @@
+# Enter your mnemonic here
+MNEMONIC = ""
+
+MAINNET_REST_URL = "https://rest-kralum.neutron-1.neutron.org" 
+MAINNET_RPC_URL = "https://rpc-kralum.neutron-1.neutron.org"
+MAINNET_CHAIN_ID = "neutron-1"
+
+TESTNET_REST_URL = "https://rest-palvus.pion-1.ntrn.tech"
+TESTNET_RPC_URL = "https://neutron-testnet-rpc.polkachu.com/"
+TESTNET_CHAIN_ID = "pion-1"
+
+ADDRESS_PREFIX = "neutron"
+DENOM = "untrn"
+GAS_PRICE = 0.075
+
+BASE_DENOM = "ibc/F082B65C88E4B6D5EF1DB243CDA1D331D002759E938A0F5CD3FFDC5D53B3E349"
+
+# Contract Paths
+AVS_CONTRACT = "../artifacts/slinky_avs_contracts-aarch64.wasm"
+FAST_TRANSFER_CONTRACT = "../artifacts/skip_super_sonic_fast_transfer_protocol-aarch64.wasm"
