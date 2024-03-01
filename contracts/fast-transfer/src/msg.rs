@@ -14,13 +14,7 @@ pub struct InstantiateMsg {
 #[cw_serde]
 pub enum ExecuteMsg {
     Deposit(Deposit),
-    FastTransfer {
-        leaf: Binary,
-        branch: Vec<[u8; 32]>,
-        root_hash: [u8; 32],
-        sender: String,
-        amount: u128,
-    },
+    FastTransfer(FastTransfer),
     Withdraw(Withdraw),
     SlowTransfer(SlowTransfer),
 }
@@ -65,4 +59,13 @@ pub struct SlowTransfer {
     pub id: u64,
     pub recipient: String,
     pub amount: Uint128,
+}
+
+#[cw_serde]
+pub struct FastTransfer {
+    pub leaf: Binary,
+    pub branch: Vec<[u8; 32]>,
+    pub root_hash: [u8; 32],
+    pub sender: String,
+    pub amount: u128,
 }
