@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Binary, Uint128};
+use cosmwasm_std::Uint128;
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -67,14 +67,12 @@ pub struct SlowTransfer {
 
 #[cw_serde]
 pub struct FastTransfer {
-    pub transaction_receipt: Binary,
-    pub branch: Vec<[u8; 32]>,
-    pub indices: Vec<usize>,
-    pub root_hash: [u8; 32],
+    pub tx_hash_to_prove: String,
+    pub all_tx_hashes: Vec<String>,
+    pub root_hash: String,
     pub sender: String,
     pub receiver: String,
     pub denom: String,
     pub amount: u128,
-    pub total_leaves: usize,
     pub chain_id: String,
 }

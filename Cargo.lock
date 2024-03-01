@@ -851,10 +851,12 @@ dependencies = [
  "cw-multi-test",
  "cw-storage-plus",
  "cw2",
+ "hex",
  "osmosis-std",
  "rs_merkle",
  "schemars",
  "serde",
+ "sha2 0.10.8",
  "thiserror",
  "tiny-keccak",
 ]

@@ -1,4 +1,5 @@
 use cosmwasm_std::{Coin, OverflowError, StdError};
+use hex::FromHexError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -30,6 +31,9 @@ pub enum ContractError {
 
     #[error("Invalid tx receipt in merkle proof")]
     InvalidTransactionReceiptToProve,
+
+    #[error("Invalid hex")]
+    InvalidHex(#[from] FromHexError),
 }
 
 pub type ContractResult<T> = Result<T, ContractError>;
