@@ -65,11 +65,14 @@ pub struct SlowTransfer {
 
 #[cw_serde]
 pub struct FastTransfer {
-    pub leaf: Binary,
+    pub transaction_receipt: Binary,
     pub branch: Vec<[u8; 32]>,
     pub indices: Vec<usize>,
     pub root_hash: [u8; 32],
     pub sender: String,
+    pub receiver: String,
+    pub denom: String,
     pub amount: u128,
     pub total_leaves: usize,
+    pub chain_id: String,
 }

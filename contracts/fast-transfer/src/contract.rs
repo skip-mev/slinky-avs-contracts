@@ -10,7 +10,7 @@ use crate::execute::{execute_deposit, execute_slow_transfer, execute_withdraw};
 use crate::helpers::{convert_to_assets, convert_to_shares};
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::query::query_vault_info;
-use crate::state::{BASE_TOKEN, LP_TOKEN_DENOM, STATE, AGGREGATOR_CONTRACT};
+use crate::state::{AGGREGATOR_CONTRACT, BASE_TOKEN, LP_TOKEN_DENOM, STATE};
 
 // version info for migration info
 const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
