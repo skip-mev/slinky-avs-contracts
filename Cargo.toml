@@ -40,3 +40,4 @@ cw-multi-test   = "0.17.0"
 rs_merkle       = "1.4.2"
 tiny-keccak     = { version = "2.0.2", features = ["keccak"] }
 osmosis-std     = "0.22.0"
+aggregator      = { version = "0.1.0", path = "./packages/aggregator" }

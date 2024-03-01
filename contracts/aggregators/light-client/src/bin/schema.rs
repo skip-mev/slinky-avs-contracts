@@ -1,6 +1,7 @@
 use cosmwasm_schema::write_api;
 
-use slinky_avs_contracts::msg::{InstantiateMsg, QueryMsg};
+use aggregator::aggregator::QueryMsg;
+use slinky_avs_contracts::msg::InstantiateMsg;
 
 fn main() {
     write_api! {
