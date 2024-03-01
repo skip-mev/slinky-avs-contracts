@@ -70,9 +70,11 @@ pub fn execute(
         ExecuteMsg::Withdraw(withdraw) => {
             execute_withdraw(deps, env, info.clone(), withdraw.amount, info.sender)
         }
-        ExecuteMsg::SlowTransfer(transfer) => {
-            execute_slow_transfer(deps, info, transfer.id, transfer.recipient)
-        }
+        ExecuteMsg::SlowTransfer {
+            id,
+            recipient,
+            amount: _,
+        } => execute_slow_transfer(deps, info, id, recipient),
         ExecuteMsg::FastTransfer(transfer) => execute_fast_transfer(deps, env, info, transfer),
     }
 }

@@ -16,7 +16,11 @@ pub enum ExecuteMsg {
     Deposit(Deposit),
     FastTransfer(FastTransfer),
     Withdraw(Withdraw),
-    SlowTransfer(SlowTransfer),
+    SlowTransfer {
+        id: u64,
+        recipient: String,
+        amount: Uint128,
+    },
 }
 
 #[cw_serde]
