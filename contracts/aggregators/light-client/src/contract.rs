@@ -51,6 +51,9 @@ pub fn execute(
 
             Ok(Response::new().add_attribute("action", "stake"))
         }
+        ExecuteMsg::SubmitRoot { chain_id, root } => {
+            write_merkle_roots(deps, vec![(chain_id, root)])
+        }
     }
 }
 
