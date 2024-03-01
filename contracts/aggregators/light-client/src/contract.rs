@@ -6,8 +6,9 @@ use cw2::set_contract_version;
 use std::collections::BTreeMap;
 
 use crate::error::{ContractError, ContractResult};
-use crate::msg::{InstantiateMsg, QueryMsg, SudoMsg, VoteExtension};
+use crate::msg::{InstantiateMsg, SudoMsg, VoteExtension};
 use crate::state::{MERKLE_ROOTS, QUARUM};
+use aggregator::aggregator::{LookupHashResponse, QueryMsg};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:slinky-avs-contracts";
@@ -36,8 +37,7 @@ pub fn sudo(deps: DepsMut, _: Env, msg: SudoMsg) -> ContractResult<Response> {
                     data_map.insert(chain_id.clone(), existing_data);
                 }
                 None => {
-                    let mut new_data: Vec<VoteExtension> = Vec::new();
-                    new_data.push(hash_vp.clone());
+                    let new_data: Vec<VoteExtension> = vec![hash_vp.clone()];
                     data_map.insert(chain_id.clone(), new_data);
                 }
             }
@@ -151,7 +151,6 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 pub mod query {
     use super::*;
-    use crate::msg::LookupHashResponse;
     use cosmwasm_std::StdError;
 
     pub fn lookup_hash(
@@ -177,7 +176,6 @@ mod tests {
     use bincode::serialize;
     use cosmwasm_std::coins;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use serde::Serialize;
     use crate::msg::{GenericVE, Vote};
 
     #[test]
@@ -200,19 +198,40 @@ mod tests {
         let info = mock_info("creator", &coins(2, "token"));
         let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
 
-        let test_case_msg = SudoMsg{ data: vec![]};
+        let test_case_msg = SudoMsg { data: vec![] };
         assert!(Ok(Response::new()).eq(&sudo(deps.as_mut(), mock_env(), test_case_msg)));
 
-        let bin = Binary::from_base64("eyJyb290cyI6eyJmb28iOiJZbUZ5In19Cg==").unwrap();
-        
+        // let bin = Binary::from_base64("eyJyb290cyI6eyJmb28iOiJZbUZ5In19Cg==").unwrap();
+
         let mut map_thing = BTreeMap::<String, Binary>::new();
-        map_thing.insert("foo".to_string(), Binary::from_base64("eyJyb290cyI6eyJmb28iOiJZbUZ5In19Cg").unwrap());
-        let vote_ex = Vote { roots: map_thing.clone()};
+        map_thing.insert(
+            "foo".to_string(),
+            Binary::from_base64("eyJyb290cyI6eyJmb28iOiJZbUZ5In19Cg").unwrap(),
+        );
+        let vote_ex = Vote {
+            roots: map_thing.clone(),
+        };
         println!("vote_ex: {:?}", hex::encode(serialize(&vote_ex).unwrap()));
-        let second_case = SudoMsg{ data: vec![GenericVE{vote: cosmwasm_std::Binary(serialize(&vote_ex).unwrap()), ve_power: 1000}]};
-        
+        let second_case = SudoMsg {
+            data: vec![GenericVE {
+                vote: cosmwasm_std::Binary(serialize(&vote_ex).unwrap()),
+                ve_power: 1000,
+            }],
+        };
+
         assert!(Ok(Response::new()).eq(&sudo(deps.as_mut(), mock_env(), second_case)));
 
-        println!("{:?}", query(deps.as_ref(), mock_env(), QueryMsg::LookupHash{chain_id: "foo".to_string(), hash: Binary::from_base64("eyJyb290cyI6eyJmb28iOiJZbUZ5In19Cg").unwrap()}).unwrap());
+        println!(
+            "{:?}",
+            query(
+                deps.as_ref(),
+                mock_env(),
+                QueryMsg::LookupHash {
+                    chain_id: "foo".to_string(),
+                    hash: Binary::from_base64("eyJyb290cyI6eyJmb28iOiJZbUZ5In19Cg").unwrap()
+                }
+            )
+            .unwrap()
+        );
     }
 }
