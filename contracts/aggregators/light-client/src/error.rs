@@ -1,4 +1,4 @@
-use cosmwasm_std::StdError;
+use cosmwasm_std::{OverflowError, StdError};
 use thiserror::Error;
 
 pub type ContractResult<T> = core::result::Result<T, ContractError>;
@@ -7,6 +7,9 @@ pub type ContractResult<T> = core::result::Result<T, ContractError>;
 pub enum ContractError {
     #[error(transparent)]
     Std(#[from] StdError),
+
+    #[error(transparent)]
+    Overflow(#[from] OverflowError),
 
     #[error("Unauthorized")]
     Unauthorized {},

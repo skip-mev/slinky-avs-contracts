@@ -12,6 +12,11 @@ pub struct SudoMsg {
 }
 
 #[cw_serde]
+pub enum ExecuteMsg {
+    Stake {},
+}
+
+#[cw_serde]
 pub struct Vote {
     pub roots: BTreeMap<String, Binary>,
 }
