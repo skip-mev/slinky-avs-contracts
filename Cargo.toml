@@ -7,7 +7,6 @@ members  = [
 ]
 
 [workspace.package]
-name = "slinky-avs-contracts"
 version = "0.1.0"
 authors = ["Eric <eric.warehime@gmail.com>"]
 edition = "2021"

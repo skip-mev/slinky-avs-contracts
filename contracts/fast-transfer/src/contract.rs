@@ -6,7 +6,9 @@ use cw2::set_contract_version;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgCreateDenom;
 
 use crate::error::ContractError;
-use crate::execute::{execute_deposit, execute_slow_transfer, execute_withdraw, execute_fast_transfer};
+use crate::execute::{
+    execute_deposit, execute_fast_transfer, execute_slow_transfer, execute_withdraw,
+};
 use crate::helpers::{convert_to_assets, convert_to_shares};
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::query::query_vault_info;
@@ -63,9 +65,7 @@ pub fn execute(
         ExecuteMsg::SlowTransfer(transfer) => {
             execute_slow_transfer(deps, info, transfer.id, transfer.recipient)
         }
-        ExecuteMsg::FastTransfer(transfer) => {
-            execute_fast_transfer(deps, env, info, transfer)
-        }
+        ExecuteMsg::FastTransfer(transfer) => execute_fast_transfer(deps, env, info, transfer),
     }
 }
 
