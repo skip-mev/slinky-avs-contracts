@@ -1,7 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Binary, Uint128};
-// use rs_merkle::MerkleProof;
-// use crate::merkle::Keccak256Algorithm;
 
 #[cw_serde]
 pub struct InstantiateMsg {
