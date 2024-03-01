@@ -173,6 +173,8 @@ mod tests {
     use super::*;
     use cosmwasm_std::coins;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use serde::Serialize;
+    use crate::msg::{GenericVE, Vote};
 
     #[test]
     fn proper_initialization() {
@@ -198,8 +200,16 @@ mod tests {
         assert!(Ok(Response::new()).eq(&sudo(deps.as_mut(), mock_env(), test_case_msg)));
 
 
-        // let second_case = SudoMsg{ data: vec![Binary]}
-        // assert!(Ok(Response::new()).eq(&sudo(deps.as_mut(), mock_env(), test_case_msg)));
+        let bin = Binary::from_base64("eyJyb290cyI6eyJmb28iOiJZbUZ5In19Cg==").unwrap();
+        let second_case = SudoMsg{ data: vec![GenericVE{vote: bin, ve_power: 123}]};
+
+        let mut map_thing = BTreeMap::<String, Binary>::new();
+        map_thing.insert("foo".to_string(), bin.clone());
+        let vote_ex = Vote { roots: map_thing.clone()};
+        vote_ex
+
+
+        assert!(Ok(Response::new()).eq(&sudo(deps.as_mut(), mock_env(), second_case)));
 
 
     }
