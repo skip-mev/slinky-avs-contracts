@@ -35,6 +35,7 @@ tiny-keccak     = { workspace = true }
 osmosis-std     = { workspace = true }
 aggregator      = { workspace = true }
 hex.workspace = true
+sha2.workspace = true
 
 [dev-dependencies]
 cw-multi-test = { workspace = true }

@@ -1,8 +1,3 @@
-use crate::merkle::Keccak256Algorithm;
-use aggregator::aggregator::{LookupHashResponse, QueryMsg as AggQueryMsg};
-use cosmwasm_std::{coins, Addr, BankMsg, CosmosMsg, DepsMut, Env, MessageInfo, Response, Uint128};
-use rs_merkle::{Hasher, MerkleProof, algorithms::Sha256};
-
 use crate::{
     error::{
         ContractError,
@@ -13,6 +8,12 @@ use crate::{
     msg::FastTransfer,
     state::{AGGREGATOR_CONTRACT, BASE_TOKEN, LP_TOKEN_DENOM, PROCESSED_IDS},
 };
+use aggregator::aggregator::{LookupHashResponse, QueryMsg as AggQueryMsg};
+use cosmwasm_std::{
+    coins, Addr, BankMsg, Binary, CosmosMsg, DepsMut, Env, MessageInfo, Response, Uint128,
+};
+use hex::{decode as hex_decode, encode as hex_encode};
+use sha2::{Digest, Sha256};
 
 const STATIC_ID: u64 = 1;
 
@@ -93,13 +94,10 @@ pub fn execute_fast_transfer(
     _info: MessageInfo,
     fast_transfer: FastTransfer,
 ) -> ContractResponse {
-    // Leaf to prove inclusion in merkle root
-    let transaction_receipt = fast_transfer.transaction_receipt;
     // Info needed to verify the merkle proof
-    let branch = fast_transfer.branch;
-    let root_hash = fast_transfer.root_hash;
-    let indices = fast_transfer.indices;
-    let total_leaves = fast_transfer.total_leaves;
+    let tx_hash_to_prove = fast_transfer.tx_hash_to_prove;
+    let all_tx_hashes = fast_transfer.all_tx_hashes;
+    let sent_root_hash = fast_transfer.root_hash;
     let chain_id = fast_transfer.chain_id;
     // In real world, amount and receiver should be info that can be pulled
     // from the transaction receipt
@@ -112,19 +110,36 @@ pub fn execute_fast_transfer(
         aggregator_contract,
         &AggQueryMsg::LookupHash {
             chain_id,
-            hash: root_hash.into(),
+            hash: Binary(hex_decode(&sent_root_hash)?),
         },
     )?;
 
     // Verify the transaction receipt is the hash as the undice wanting to be merkle proofed
-    let receipt_hash = Sha256::hash(&transaction_receipt);
-    if !branch.contains(&receipt_hash) {
+    if !all_tx_hashes.contains(&tx_hash_to_prove) {
         return Err(InvalidTransactionReceiptToProve {});
     }
 
-    // Create the merkle proof and verify it against the root hash retrieved from the aggregator
-    let merkle_proof: MerkleProof<Sha256> = MerkleProof::new(branch.clone());
-    if !merkle_proof.verify(root_hash, &indices, &branch, total_leaves) {
+    // create a Sha256 object
+    let mut hasher = Sha256::new();
+
+    let data_to_hash: Vec<u8> =
+        all_tx_hashes
+            .iter()
+            .fold(Vec::new(), |mut data_to_hash, tx_hash| {
+                data_to_hash.extend(hex_decode(tx_hash).unwrap());
+                data_to_hash
+            });
+
+    // Add data to hash
+    hasher.update(&data_to_hash);
+
+    // Read hash digest and consume hasher
+    let root_hash = hasher.finalize();
+
+    let root_hash_hex = hex_encode(root_hash);
+
+    // Verify the root hash is the same as the one in the transaction
+    if root_hash_hex != sent_root_hash {
         return Err(InvalidMerkleProof {});
     }
 
@@ -144,27 +159,4 @@ pub fn execute_fast_transfer(
     PROCESSED_IDS.save(deps.storage, STATIC_ID, &true)?;
 
     Ok(Response::new().add_message(bank_msg))
-}
-
-#[cfg(test)]
-pub mod test {
-    use super::*;
-    use rs_merkle::MerkleTree;
-    use hex::encode as hex_encode;
-
-    #[test]
-    fn test_merkle() {
-        let mut leaves: Vec<[u8; 32]> = vec![];
-        for i in 0u8..10 {
-            let leaf = [i; 32];
-            leaves.push(leaf);
-        }
-
-        let tree: MerkleTree<Sha256> = rs_merkle::MerkleTree::from_leaves(&leaves);
-        let root = tree.root();
-        
-        // Convert root to hex string and print
-        let root_hex = hex_encode(root);
-        println!("Root: {:?}", root_hex);
-    }
 }

@@ -856,6 +856,7 @@ dependencies = [
  "rs_merkle",
  "schemars",
  "serde",
+ "sha2 0.10.8",
  "thiserror",
  "tiny-keccak",
 ]
