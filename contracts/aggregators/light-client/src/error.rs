@@ -3,7 +3,7 @@ use thiserror::Error;
 
 pub type ContractResult<T> = core::result::Result<T, ContractError>;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
     #[error(transparent)]
     Std(#[from] StdError),
