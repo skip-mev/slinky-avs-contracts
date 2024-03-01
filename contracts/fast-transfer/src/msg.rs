@@ -9,6 +9,8 @@ pub struct InstantiateMsg {
     pub base_denom: String,
     /// LP token sub-denom
     pub lp_sub_denom: String,
+    /// Aggregator contract address
+    pub aggregator_contract: String,
 }
 
 #[cw_serde]
@@ -65,7 +67,9 @@ pub struct SlowTransfer {
 pub struct FastTransfer {
     pub leaf: Binary,
     pub branch: Vec<[u8; 32]>,
+    pub indices: Vec<usize>,
     pub root_hash: [u8; 32],
     pub sender: String,
     pub amount: u128,
+    pub total_leaves: usize,
 }

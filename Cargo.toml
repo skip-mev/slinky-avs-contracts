@@ -2,7 +2,8 @@
 resolver = "2"
 members  = [
     "contracts/aggregators/light-client",
-    "contracts/fast-transfer"
+    "contracts/fast-transfer",
+    "packages/*"
 ]
 
 [workspace.package]
