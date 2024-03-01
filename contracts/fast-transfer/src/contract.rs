@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     entry_point, to_json_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response,
-    StdResult,
+    StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgCreateDenom;
@@ -12,7 +12,7 @@ use crate::execute::{
 use crate::helpers::{convert_to_assets, convert_to_shares};
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::query::query_vault_info;
-use crate::state::{AGGREGATOR_CONTRACT, BASE_TOKEN, LP_TOKEN_DENOM, STATE};
+use crate::state::{VaultState, AGGREGATOR_CONTRACT, BASE_TOKEN, LP_TOKEN_DENOM, STATE};
 
 // version info for migration info
 const CONTRACT_NAME: &str = env!("CARGO_PKG_NAME");
@@ -37,6 +37,14 @@ pub fn instantiate(
 
     BASE_TOKEN.save(deps.storage, &msg.base_denom)?;
     LP_TOKEN_DENOM.save(deps.storage, &lp_token_denom)?;
+
+    STATE.save(
+        deps.storage,
+        &VaultState {
+            staked_base_tokens: Uint128::zero(),
+            vault_token_supply: Uint128::zero(),
+        },
+    )?;
 
     // Create the LP token denom
     let created_denom_msg: CosmosMsg = MsgCreateDenom {
