@@ -176,7 +176,6 @@ mod tests {
     use bincode::serialize;
     use cosmwasm_std::coins;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    // use serde::Serialize;
     use crate::msg::{GenericVE, Vote};
 
     #[test]
