@@ -47,4 +47,12 @@ impl From<GenericVE> for VoteExtension {
         let encoded = serialize(&value).unwrap();
         deserialize(&encoded[..]).unwrap()
     }
+
+}
+
+impl From<Binary> for VoteExtension {
+    fn from(value: Binary) -> Self {
+        deserialize(value.as_ref()).unwrap()
+    }
+
 }

@@ -193,5 +193,14 @@ mod tests {
         let msg = InstantiateMsg {};
         let info = mock_info("creator", &coins(2, "token"));
         let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+
+        let test_case_msg = SudoMsg{ data: vec![]};
+        assert!(Ok(Response::new()).eq(&sudo(deps.as_mut(), mock_env(), test_case_msg)));
+
+
+        // let second_case = SudoMsg{ data: vec![Binary]}
+        // assert!(Ok(Response::new()).eq(&sudo(deps.as_mut(), mock_env(), test_case_msg)));
+
+
     }
 }
