@@ -160,3 +160,32 @@ pub fn execute_fast_transfer(
 
     Ok(Response::new().add_message(bank_msg))
 }
+
+#[cfg(test)]
+pub mod test {
+    use super::*;
+
+    #[test]
+    pub fn test() {
+        let all_tx_hashes: Vec<String> = vec!["68656C6C6F206D79206E616D6520697320626F62".to_string(), "68656C6C6F206D79206E616D6520697320616C696365".to_string()];
+        // create a Sha256 object
+        let mut hasher = Sha256::new();
+
+        let data_to_hash: Vec<u8> =
+            all_tx_hashes
+                .iter()
+                .fold(Vec::new(), |mut data_to_hash, tx_hash| {
+                    data_to_hash.extend(hex_decode(tx_hash).unwrap());
+                    data_to_hash
+                });
+
+        // Add data to hash
+        hasher.update(&data_to_hash);
+
+        // Read hash digest and consume hasher
+        let root_hash = hasher.finalize();
+
+        let root_hash_hex = hex_encode(root_hash);
+        println!("root hash hex: {:?}", root_hash_hex);
+    }
+}
