@@ -27,20 +27,23 @@ pub fn sudo(deps: DepsMut, _: Env, msg: SudoMsg) -> ContractResult<Response> {
         BTreeMap::<String, Vec<VoteExtension>>::new();
     for generic_hash_vp in msg.data {
         let hash_vp: VoteExtension = From::from(generic_hash_vp);
+        println!("hash_vp: {:?}", hash_vp);
         for (chain_id, _) in hash_vp.vote.roots.iter() {
             match data_map.get(chain_id) {
                 Some(result) => {
-                    let existing_data: Vec<VoteExtension> = result.to_vec();
+                    let existing_data: Vec<VoteExtension> = Vec::<VoteExtension>::new();
                     result.to_vec().push(hash_vp.clone());
                     data_map.insert(chain_id.clone(), existing_data);
                 }
                 None => {
-                    let new_data: Vec<VoteExtension> = Vec::new();
+                    let mut new_data: Vec<VoteExtension> = Vec::new();
+                    new_data.push(hash_vp.clone());
                     data_map.insert(chain_id.clone(), new_data);
                 }
             }
         }
     }
+
     // aggregate over all the collected vote data
     let mut vote_roots: Vec<(String, Binary)> = Vec::new();
     for (chain_id, vote_extensions) in data_map.iter() {
@@ -206,10 +209,10 @@ mod tests {
         map_thing.insert("foo".to_string(), Binary::from_base64("eyJyb290cyI6eyJmb28iOiJZbUZ5In19Cg").unwrap());
         let vote_ex = Vote { roots: map_thing.clone()};
         println!("vote_ex: {:?}", hex::encode(serialize(&vote_ex).unwrap()));
-        let second_case = SudoMsg{ data: vec![GenericVE{vote: cosmwasm_std::Binary(serialize(&vote_ex).unwrap()), ve_power: 123}]};
+        let second_case = SudoMsg{ data: vec![GenericVE{vote: cosmwasm_std::Binary(serialize(&vote_ex).unwrap()), ve_power: 1000}]};
         
         assert!(Ok(Response::new()).eq(&sudo(deps.as_mut(), mock_env(), second_case)));
 
-
+        println!("{:?}", query(deps.as_ref(), mock_env(), QueryMsg::LookupHash{chain_id: "foo".to_string(), hash: Binary::from_base64("eyJyb290cyI6eyJmb28iOiJZbUZ5In19Cg").unwrap()}).unwrap());
     }
 }
