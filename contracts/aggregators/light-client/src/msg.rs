@@ -44,7 +44,7 @@ pub struct GenericVE {
 
 impl From<GenericVE> for VoteExtension {
     fn from(value: GenericVE) -> Self {
-        let vote = deserialize(value.vote.as_ref()).unwrap();
+        let vote = serde_json::from_slice(value.vote.as_ref()).unwrap();
         VoteExtension {
             vote,
             ve_power: value.ve_power,

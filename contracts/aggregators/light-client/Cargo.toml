@@ -32,6 +32,7 @@ schemars = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 hex = "0.4"
+serde_json = { version = "1.0", features = ["preserve_order"] }
 
 [dev-dependencies]
 cw-multi-test = { workspace = true }

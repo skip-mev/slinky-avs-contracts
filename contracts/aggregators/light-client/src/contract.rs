@@ -27,7 +27,6 @@ pub fn sudo(deps: DepsMut, _: Env, msg: SudoMsg) -> ContractResult<Response> {
         BTreeMap::<String, Vec<VoteExtension>>::new();
     for generic_hash_vp in msg.data {
         let hash_vp: VoteExtension = From::from(generic_hash_vp);
-        println!("hash_vp: {:?}", hash_vp);
         for (chain_id, _) in hash_vp.vote.roots.iter() {
             match data_map.get(chain_id) {
                 Some(result) => {
@@ -206,13 +205,22 @@ mod tests {
         let bin = Binary::from_base64("eyJyb290cyI6eyJmb28iOiJZbUZ5In19Cg==").unwrap();
         
         let mut map_thing = BTreeMap::<String, Binary>::new();
-        map_thing.insert("foo".to_string(), Binary::from_base64("eyJyb290cyI6eyJmb28iOiJZbUZ5In19Cg").unwrap());
+        map_thing.insert("1".to_string(), hex::decode("ba6a2db5ed45dc296491503ec31c9cf99aa600791aa1136b886c114a206f9b5f").unwrap().into());
+        map_thing.insert("2".to_string(), hex::decode("ca6a2db5ed45dc296491503ec31c9cf99aa600791aa1136b886c114a206f9b5f").unwrap().into());
         let vote_ex = Vote { roots: map_thing.clone()};
-        println!("vote_ex: {:?}", hex::encode(serialize(&vote_ex).unwrap()));
-        let second_case = SudoMsg{ data: vec![GenericVE{vote: cosmwasm_std::Binary(serialize(&vote_ex).unwrap()), ve_power: 1000}]};
+
+        let json_bytes: Vec<u8> = serde_json::to_vec(&vote_ex).unwrap();
+        println!("Serialized JSON bytes: {:?}", json_bytes);
+        println!("Serialized JSON bytes as hex {:?}", hex::encode(json_bytes.clone()));
+
+        let json_string = String::from_utf8(json_bytes.clone()).unwrap();
+        println!("Serialized JSON string: {:?}", json_string);
+
+        let second_case = SudoMsg{data: vec![GenericVE{vote: cosmwasm_std::Binary(json_bytes.clone()), ve_power: 1000}]};
         
         assert!(Ok(Response::new()).eq(&sudo(deps.as_mut(), mock_env(), second_case)));
 
-        println!("{:?}", query(deps.as_ref(), mock_env(), QueryMsg::LookupHash{chain_id: "foo".to_string(), hash: Binary::from_base64("eyJyb290cyI6eyJmb28iOiJZbUZ5In19Cg").unwrap()}).unwrap());
+        println!("{:?}", query(deps.as_ref(), mock_env(), QueryMsg::LookupHash{chain_id: "1".to_string(), hash: hex::decode("ba6a2db5ed45dc296491503ec31c9cf99aa600791aa1136b886c114a206f9b5f").unwrap().into()}).unwrap());
     }
 }
+

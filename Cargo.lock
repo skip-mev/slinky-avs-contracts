@@ -342,7 +342,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c24f403d068ad0b359e577a77f92392118be3f3c927538f2bb544a5ecd828c6"
 dependencies = [
  "curve25519-dalek",
- "hashbrown",
+ "hashbrown 0.12.3",
  "hex",
  "rand_core 0.6.4",
  "serde",
@@ -374,6 +374,12 @@ dependencies = [
  "subtle",
  "zeroize",
 ]
+
+[[package]]
+name = "equivalent"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 
 [[package]]
 name = "ff"
@@ -434,6 +440,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hashbrown"
+version = "0.14.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "290f1a1d9242c78d09ce40a5e87e7554ee637af1351968159f4952f028f75604"
+
+[[package]]
 name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -446,6 +458,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c49c37c09c17a53d937dfbb742eb3a961d65a994e6bcdcf37e7399d0cc8ab5e"
 dependencies = [
  "digest 0.10.7",
+]
+
+[[package]]
+name = "indexmap"
+version = "2.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b0b929d511467233429c45a44ac1dcaa21ba0f5ba11e4879e6ed28ddb4f9df4"
+dependencies = [
+ "equivalent",
+ "hashbrown 0.14.3",
 ]
 
 [[package]]
@@ -667,6 +689,7 @@ version = "1.0.114"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c5f09b1bd632ef549eaa9f60a1f8de742bdbc698e6cee2095fc84dde5f549ae0"
 dependencies = [
+ "indexmap",
  "itoa",
  "ryu",
  "serde",
@@ -733,6 +756,7 @@ dependencies = [
  "hex",
  "schemars",
  "serde",
+ "serde_json",
  "thiserror",
 ]
 
